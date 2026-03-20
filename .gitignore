@@ -1,0 +1,26 @@
+## .NET
+bin/
+obj/
+TestResults/
+*.trx
+*.user
+*.suo
+*.userprefs
+
+## IDE
+.vs/
+.vscode/
+.idea/
+*.swp
+
+## Playwright
+.auth/
+
+## OS
+.DS_Store
+Thumbs.db
+
+## Test artifacts
+*.zip
+*.png
+healing-report.json

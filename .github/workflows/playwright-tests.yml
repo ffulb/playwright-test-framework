@@ -1,0 +1,102 @@
+name: Playwright Tests
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: 'Base URL to test against'
+        required: false
+        default: 'https://the-internet.herokuapp.com'
+      browser:
+        description: 'Browser (Chromium, Firefox, Webkit)'
+        required: false
+        default: 'Chromium'
+
+env:
+  DOTNET_VERSION: '8.0.x'
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  test:
+    name: Run Playwright Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [Chromium]
+        # Uncomment to test on multiple browsers:
+        # browser: [Chromium, Firefox, Webkit]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore dependencies
+        run: dotnet restore PlaywrightFramework.sln
+
+      - name: Build solution
+        run: dotnet build PlaywrightFramework.sln --configuration Release --no-restore
+
+      - name: Install Playwright browsers
+        run: pwsh PlaywrightFramework/bin/Release/net8.0/playwright.ps1 install --with-deps
+
+      - name: Run tests
+        run: |
+          dotnet test PlaywrightFramework.sln \
+            --configuration Release \
+            --no-build \
+            --logger "trx;LogFileName=test-results.trx" \
+            --logger "html;LogFileName=test-results.html" \
+            --results-directory TestResults
+        env:
+          TEST_BASE_URL: ${{ github.event.inputs.base_url || 'https://the-internet.herokuapp.com' }}
+          TEST_HEADLESS: 'true'
+          TEST_BROWSER_TYPE: ${{ matrix.browser }}
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.browser }}
+          path: |
+            TestResults/
+            PlaywrightFramework/TestResults/
+          retention-days: 30
+
+      - name: Upload Playwright traces
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-traces-${{ matrix.browser }}
+          path: |
+            PlaywrightFramework/TestResults/*.zip
+          retention-days: 7
+
+      - name: Upload self-healing report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: healing-report-${{ matrix.browser }}
+          path: PlaywrightFramework/TestResults/healing-report.json
+          retention-days: 30
+
+      - name: Publish test results to GitHub
+        if: always()
+        uses: dorny/test-reporter@v1
+        with:
+          name: Test Results (${{ matrix.browser }})
+          path: TestResults/test-results.trx
+          reporter: dotnet-trx
+          fail-on-error: false
