@@ -160,7 +160,37 @@ Import `azure-pipelines.yml` into your Azure DevOps project. Supports parameteri
 
 ## AI Test Generator
 
-Generate test scripts from natural language descriptions:
+### CLI Tool (Interactive)
+
+The fastest way to generate tests — just describe what you want:
+
+```bash
+# Quick generate from a prompt
+cd PlaywrightFramework.Cli
+dotnet run -- generate "Test the login page with email and password" /login
+
+# Interactive mode — keep generating tests in a loop
+dotnet run -- interactive
+
+# Guided element-based generation
+dotnet run -- elements
+```
+
+**Example:**
+```
+> dotnet run -- generate "Test checkout with shipping and payment validation" /checkout
+
+Generating tests for: Test checkout with shipping and payment validation
+Target URL path: /checkout
+
+── Page Object: Generated/CheckoutPage.cs ──
+── Test Class: Generated/CheckoutTests.cs ──
+
+Files saved to: Generated/
+Copy these files to Pages/ and Tests/ folders, then customize the selectors for your app.
+```
+
+### Programmatic Usage
 
 ```csharp
 using PlaywrightFramework.Utilities;
