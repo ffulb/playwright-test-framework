@@ -23,6 +23,9 @@ public sealed class TestSettings
 
     /// <summary>Test reporting configuration.</summary>
     public ReportingSettings Reporting { get; set; } = new();
+
+    /// <summary>Email notification settings for leadership reports.</summary>
+    public NotificationSettings Notification { get; set; } = new();
 }
 
 /// <summary>Browser launch options.</summary>
@@ -106,4 +109,38 @@ public sealed class ReportingSettings
 
     /// <summary>Capture Playwright trace on test failure.</summary>
     public bool TraceOnFailure { get; set; } = true;
+
+    /// <summary>Automatically generate HTML report after test run.</summary>
+    public bool AutoGenerateReport { get; set; } = true;
+}
+
+/// <summary>Email notification settings for sending results to leadership.</summary>
+public sealed class NotificationSettings
+{
+    /// <summary>Enable email notifications after test runs.</summary>
+    public bool Enabled { get; set; }
+
+    /// <summary>SMTP server hostname.</summary>
+    public string SmtpHost { get; set; } = "smtp.gmail.com";
+
+    /// <summary>SMTP server port.</summary>
+    public int SmtpPort { get; set; } = 587;
+
+    /// <summary>SMTP username for authentication.</summary>
+    public string SmtpUsername { get; set; } = string.Empty;
+
+    /// <summary>SMTP password or app password.</summary>
+    public string SmtpPassword { get; set; } = string.Empty;
+
+    /// <summary>Use SSL/TLS for SMTP connection.</summary>
+    public bool UseSsl { get; set; } = true;
+
+    /// <summary>Sender email address.</summary>
+    public string FromAddress { get; set; } = string.Empty;
+
+    /// <summary>Sender display name.</summary>
+    public string FromName { get; set; } = "Playwright Test Automation";
+
+    /// <summary>List of recipient email addresses (leadership team).</summary>
+    public List<string> Recipients { get; set; } = new();
 }

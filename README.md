@@ -11,6 +11,8 @@ A production-ready C# test automation framework built on **Microsoft Playwright*
 - **Page Object Model** - Clean separation of test logic and page interactions
 - **CI/CD ready** - GitHub Actions and Azure DevOps pipeline YAML included
 - **Test artifacts** - Automatic screenshots and Playwright traces on failure
+- **AI Test Generator** - Generate Page Object + NUnit test code from natural language descriptions
+- **Leadership Notifications** - Auto-email HTML test reports to your leadership team after each run
 
 ## Quick Start
 
@@ -156,12 +158,82 @@ Tests run automatically on push/PR to `main` and `develop`. Manual runs support 
 
 Import `azure-pipelines.yml` into your Azure DevOps project. Supports parameterized runs with URL and browser selection.
 
+## AI Test Generator
+
+Generate test scripts from natural language descriptions:
+
+```csharp
+using PlaywrightFramework.Utilities;
+
+// Generate Page Object + Test from description
+var (pageCode, testCode) = TestGenerator.GenerateFromDescription(
+    "Test the login page with valid and invalid credentials",
+    "/login"
+);
+
+// Or build with explicit elements
+var elements = new Dictionary<string, ElementInfo>
+{
+    ["SearchInput"] = new ElementInfo("#search", ElementType.Input),
+    ["SearchButton"] = new ElementInfo(".search-btn", ElementType.Button),
+    ["Results"] = new ElementInfo("#results", ElementType.Text)
+};
+
+var pageObject = TestGenerator.GeneratePageObject("Search", "/search", elements);
+
+var scenarios = new List<TestScenario>
+{
+    new TestScenario
+    {
+        Name = "Search_ShouldReturnResults",
+        Description = "Searching returns matching results",
+        Steps = new List<string>
+        {
+            "await _page.FillSearchInputAsync(\"test\");",
+            "await _page.ClickSearchButtonAsync();",
+            "var text = await _page.GetResultsTextAsync();",
+            "Assert.That(text, Does.Contain(\"test\"));"
+        }
+    }
+};
+
+var testClass = TestGenerator.GenerateTestClass("Search", "Search", scenarios);
+```
+
+## Leadership Notifications
+
+Auto-send test results to your leadership team via email after each run.
+
+### Setup
+
+In `appsettings.json`:
+
+```json
+"Notification": {
+  "Enabled": true,
+  "SmtpHost": "smtp.gmail.com",
+  "SmtpPort": 587,
+  "SmtpUsername": "your-email@gmail.com",
+  "SmtpPassword": "your-app-password",
+  "UseSsl": true,
+  "FromAddress": "your-email@gmail.com",
+  "FromName": "Playwright Test Automation",
+  "Recipients": [
+    "lead1@company.com",
+    "lead2@company.com"
+  ]
+}
+```
+
+When enabled, a styled HTML email with pass/fail metrics and attached report is sent automatically after each test run.
+
 ## Adding New Tests
 
 1. Create a page object in `Pages/` extending `BasePage`
 2. Define selectors with `AlternativeLocators` for self-healing
 3. Create a test class in `Tests/` extending `BaseTest`
 4. Use `Page`, `Settings`, and page objects from the base class
+5. Or use `TestGenerator` to scaffold from a description
 
 ## License
 

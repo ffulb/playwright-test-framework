@@ -3,6 +3,7 @@ using Microsoft.Playwright;
 using NUnit.Framework;
 using PlaywrightFramework.Config;
 using PlaywrightFramework.Core;
+using PlaywrightFramework.Utilities;
 
 namespace PlaywrightFramework.Tests;
 
@@ -141,6 +142,34 @@ public abstract class BaseTest
     {
         // Save self-healing report
         await SelfHealingLocator.SaveHealingReportAsync(Settings.SelfHealing.HealingReportPath);
+
+        // Auto-generate HTML report
+        if (Settings.Reporting.AutoGenerateReport)
+        {
+            var nunitResultsPath = Path.Combine(Settings.Reporting.OutputDirectory, "TestResult.xml");
+            var reportPath = Path.Combine(Settings.Reporting.OutputDirectory, "test-report.html");
+            await Utilities.ReportGenerator.GenerateHtmlReportAsync(
+                nunitResultsPath,
+                Settings.SelfHealing.HealingReportPath,
+                reportPath);
+        }
+
+        // Send email notification to leadership
+        if (Settings.Notification.Enabled)
+        {
+            try
+            {
+                var nunitResultsPath = Path.Combine(Settings.Reporting.OutputDirectory, "TestResult.xml");
+                await Utilities.NotificationService.SendTestRunNotificationAsync(
+                    Settings,
+                    nunitResultsPath,
+                    Settings.SelfHealing.HealingReportPath);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[Notification] Failed to send notification: {ex.Message}");
+            }
+        }
 
         await Browser.CloseAsync();
         Playwright.Dispose();
