@@ -137,6 +137,93 @@ For apps that use Azure AD / Entra ID login:
 
 2. The framework handles: email entry, password entry, MFA (if TOTP secret provided), consent screens, and session persistence.
 
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                        Test Execution                               │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────────┐  │
+│  │ LoginTests   │  │ Navigation   │  │ [Your Tests]             │  │
+│  │              │  │ Tests        │  │                          │  │
+│  └──────┬───────┘  └──────┬───────┘  └────────────┬─────────────┘  │
+│         └─────────────────┼───────────────────────┘                 │
+│                           │ extends                                 │
+│                    ┌──────┴───────┐                                 │
+│                    │   BaseTest   │ ← NUnit lifecycle, browser      │
+│                    │              │   setup/teardown, artifacts      │
+│                    └──────┬───────┘                                 │
+└───────────────────────────┼─────────────────────────────────────────┘
+                            │ uses
+┌───────────────────────────┼─────────────────────────────────────────┐
+│                     Page Objects                                     │
+│                    ┌──────┴───────┐                                  │
+│                    │   BasePage   │ ← Navigation, screenshots,      │
+│                    │              │   self-healing access            │
+│                    └──────┬───────┘                                  │
+│         ┌─────────────────┼───────────────────────┐                 │
+│  ┌──────┴───────┐  ┌──────┴───────┐  ┌────────────┴─────────────┐  │
+│  │  LoginPage   │  │ [YourPages]  │  │ Generated Pages (CLI)    │  │
+│  └──────────────┘  └──────────────┘  └──────────────────────────┘  │
+└─────────────────────────────┬───────────────────────────────────────┘
+                              │ uses
+┌─────────────────────────────┼───────────────────────────────────────┐
+│                        Core Engine                                   │
+│  ┌──────────────────┐  ┌───┴──────────┐  ┌──────────────────────┐  │
+│  │  BrowserFactory  │  │ SelfHealing  │  │    EntraAuth         │  │
+│  │                  │  │ Locator      │  │                      │  │
+│  │ • Chromium       │  │              │  │ • Email/Password     │  │
+│  │ • Firefox        │  │ • Primary    │  │ • TOTP MFA           │  │
+│  │ • WebKit         │  │ • data-testid│  │ • Consent handling   │  │
+│  │ • Context mgmt   │  │ • aria-label │  │ • Session persist    │  │
+│  │ • Session reuse  │  │ • text       │  │                      │  │
+│  │                  │  │ • CSS/XPath  │  │                      │  │
+│  │                  │  │ • Auto-derive│  │                      │  │
+│  └──────────────────┘  └──────────────┘  └──────────────────────┘  │
+└─────────────────────────────┬───────────────────────────────────────┘
+                              │ uses
+┌─────────────────────────────┼───────────────────────────────────────┐
+│                       Utilities                                      │
+│  ┌──────────────────┐  ┌───┴──────────┐  ┌──────────────────────┐  │
+│  │ TestGenerator    │  │ ReportGen    │  │ NotificationService  │  │
+│  │                  │  │              │  │                      │  │
+│  │ • NL → Page+Test │  │ • HTML report│  │ • SMTP email         │  │
+│  │ • Element-based  │  │ • Healing    │  │ • Pass/fail metrics  │  │
+│  │ • Interactive CLI│  │   summary    │  │ • Leadership alerts  │  │
+│  └──────────────────┘  └──────────────┘  └──────────────────────┘  │
+└─────────────────────────────┬───────────────────────────────────────┘
+                              │ reads
+┌─────────────────────────────┼───────────────────────────────────────┐
+│                      Configuration                                   │
+│  ┌──────────────────────────┴──────────────────────────────────────┐│
+│  │                    appsettings.json                              ││
+│  │  BaseUrl · Browser · Credentials · EntraAuth · SelfHealing      ││
+│  │  Reporting · Notification                                       ││
+│  └─────────────────────────────────────────────────────────────────┘│
+│  ┌──────────────────────────┐  ┌───────────────────────────────────┐│
+│  │   TestSettings.cs        │  │  Environment Variable Overrides   ││
+│  │   (strongly-typed model) │  │  TEST_BASE_URL, TEST_HEADLESS,    ││
+│  │                          │  │  TEST_ENVIRONMENT                 ││
+│  └──────────────────────────┘  └───────────────────────────────────┘│
+└─────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────┐
+│                        CI/CD Pipelines                               │
+│  ┌──────────────────┐           ┌──────────────────────────────┐   │
+│  │  GitHub Actions   │           │  Azure DevOps Pipelines      │   │
+│  │  (.github/        │           │  (azure-pipelines.yml)       │   │
+│  │   workflows/)     │           │                              │   │
+│  └──────────────────┘           └──────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+### Data Flow
+
+1. **Test starts** → `BaseTest` loads `appsettings.json` → launches browser via `BrowserFactory`
+2. **Entra Auth** (if enabled) → authenticates once → saves session for reuse
+3. **Test runs** → Page Objects use `SelfHealingLocator` → if selector breaks, auto-heals and logs
+4. **Test ends** → captures screenshots/traces on failure → generates HTML report
+5. **Notification** (if enabled) → emails pass/fail summary to leadership team
+
 ## Project Structure
 
 ```
