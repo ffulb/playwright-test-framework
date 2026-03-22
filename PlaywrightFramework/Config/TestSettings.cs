@@ -78,6 +78,9 @@ public sealed class EntraAuthSettings
     /// <summary>TOTP secret for MFA bypass (leave empty to skip).</summary>
     public string MfaSecret { get; set; } = string.Empty;
 
+    /// <summary>Timeout in milliseconds to wait for MFA prompt (default 30000 for mobile push).</summary>
+    public int MfaTimeout { get; set; } = 30_000;
+
     /// <summary>Path to save/load browser storage state for session reuse.</summary>
     public string StorageStatePath { get; set; } = ".auth/entra-state.json";
 }

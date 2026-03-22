@@ -129,7 +129,7 @@ public sealed class EntraAuth
     {
         try
         {
-            await page.Locator(MfaCodeInput).WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 5000 });
+            await page.Locator(MfaCodeInput).WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = _settings.MfaTimeout });
 
             var totpCode = GenerateTotpCode(_settings.MfaSecret);
             Console.WriteLine("[EntraAuth] Entering MFA code...");

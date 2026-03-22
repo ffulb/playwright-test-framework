@@ -4,6 +4,7 @@ using NUnit.Framework;
 using PlaywrightFramework.Config;
 using PlaywrightFramework.Core;
 using PlaywrightFramework.Utilities;
+using System.IO;
 
 namespace PlaywrightFramework.Tests;
 
@@ -86,6 +87,13 @@ public abstract class BaseTest
         }
 
         Page = await Context.NewPageAsync();
+
+        // Perform Entra authentication if enabled and no valid session exists
+        if (Settings.EntraAuth.Enabled)
+        {
+            var entra = new EntraAuth(Settings.EntraAuth);
+            await entra.AuthenticateAsync(Page, Settings.BaseUrl);
+        }
     }
 
     /// <summary>

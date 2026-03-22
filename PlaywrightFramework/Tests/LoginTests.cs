@@ -10,6 +10,10 @@ namespace PlaywrightFramework.Tests;
 /// To run against your own site:
 ///   1. Update BaseUrl and Credentials in appsettings.json
 ///   2. Update LoginPage.cs selectors to match your login form
+///
+/// NOTE: These tests are skipped when EntraAuth is enabled, since Entra
+/// handles authentication via redirect — there is no traditional login form.
+/// Create your own Page Objects and Tests for post-login pages instead.
 /// </summary>
 [TestFixture]
 [Category("Login")]
@@ -21,6 +25,11 @@ public sealed class LoginTests : BaseTest
     [SetUp]
     public void InitPage()
     {
+        if (Settings.EntraAuth.Enabled)
+        {
+            Assert.Ignore("LoginTests are skipped when Entra authentication is enabled. " +
+                "Entra handles login via redirect — create Page Objects for your post-login pages instead.");
+        }
         _loginPage = new LoginPage(Page, Settings);
     }
 
