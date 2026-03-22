@@ -288,6 +288,16 @@ class Program
         Console.ResetColor();
     }
 
+    static int HandleUnknown(string command)
+    {
+        Console.ForegroundColor = ConsoleColor.Red;
+        Console.WriteLine($"Unknown command: '{command}'");
+        Console.ResetColor();
+        Console.WriteLine();
+        ShowHelp();
+        return 1;
+    }
+
     static string InferPageName(string url)
     {
         var segments = url.Trim('/').Split('/');
